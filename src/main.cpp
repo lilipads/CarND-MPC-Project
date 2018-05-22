@@ -92,34 +92,48 @@ int main() {
           double psi = j[1]["psi"];
           double v = j[1]["speed"];
 
-          /*
-          * TODO: Calculate steering angle and throttle using MPC.
-          *
-          * Both are in between [-1, 1].
-          *
-          */
-          double steer_value;
-          double throttle_value;
+          // transform to car coordinates
+          Eigen::VectorXd ptsx_v(6);
+          Eigen::VectorXd ptsy_v(6);
+          // For display of the waypoints/reference line
+          vector<double> next_x_vals;
+          vector<double> next_y_vals;   
+          for (int i = 0; i < ptsx.size(); i++){
+            ptsx_v(i) = (ptsx[i] - px) * cos(-psi) - (ptsy[i] - py) * sin(-psi);
+            ptsy_v(i) = (ptsx[i] - px) * sin(-psi) + (ptsy[i] - py) * cos(-psi);
+            next_x_vals.push_back(ptsx_v(i));
+            next_y_vals.push_back(ptsy_v(i));
+          }
 
-          json msgJson;
-          // NOTE: Remember to divide by deg2rad(25) before you send the steering value back.
-          // Otherwise the values will be in between [-deg2rad(25), deg2rad(25] instead of [-1, 1].
-          msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = throttle_value;
+          auto coeffs = polyfit(ptsx_v, ptsy_v, 3);
+          // The cross track error is calculated by evaluating at polynomial at x, f(x) 
+          // and subtracting y.
+          double cte = polyeval(coeffs, px) - py;
+          // Due to the sign starting at 0, the orientation error is -f'(x).
+          // derivative of coeffs[0] + coeffs[1] * x -> coeffs[1]
+          double epsi = psi - atan(coeffs[1]);
+          Eigen::VectorXd state(6);
+          state << 0, 0, 0, v, cte, epsi;
 
           //Display the MPC predicted trajectory 
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
 
+          auto solution = mpc.Solve(state, coeffs, mpc_x_vals, mpc_y_vals);
+
+          // Calculate steering angle and throttle using MPC. Both are in between [-1, 1].
+          double steer_value = - solution[0] / deg2rad(25);
+          double throttle_value = solution[1];
+
+          json msgJson;
+          msgJson["steering_angle"] = steer_value;
+          msgJson["throttle"] = throttle_value;
+
+
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
-
           msgJson["mpc_x"] = mpc_x_vals;
           msgJson["mpc_y"] = mpc_y_vals;
-
-          //Display the waypoints/reference line
-          vector<double> next_x_vals;
-          vector<double> next_y_vals;
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
@@ -164,11 +178,11 @@ int main() {
     }
   });
 
-  h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
+  h.onConnection([](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
     std::cout << "Connected!!!" << std::endl;
   });
 
-  h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code,
+  h.onDisconnection([](uWS::WebSocket<uWS::SERVER> ws, int code,
                          char *message, size_t length) {
     ws.close();
     std::cout << "Disconnected" << std::endl;

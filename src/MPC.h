@@ -11,10 +11,15 @@ class MPC {
   MPC();
 
   virtual ~MPC();
+  
+  // TODO: delete
+  double prevDelta;
+  double prevA;
 
   // Solve the model given an initial state and polynomial coefficients.
   // Return the first actuatotions.
-  vector<double> Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs);
+  vector<double> Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs,
+  	std::vector<double> & mpc_x_vals, std::vector<double> & mpc_y_vals);
 };
 
 #endif /* MPC_H */
