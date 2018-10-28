@@ -1,7 +1,8 @@
 # CarND-Controls-MPC
-Self-Driving Car Engineer Nanodegree Program
 
----
+I implemented Model Predictive Control (MPC) to drive the car around the track. The goal of MPC is to calculate the steering, throttle and steering values for a car to follow a given trajectory. The MPC fits a polynomial line to the planned trajectory and uses an optimzier to find the control inputs and minimize a user-defined cost function. 
+
+![demo](demo.gif)
 
 ## The model
 
@@ -44,6 +45,6 @@ I assume a latency of 100 milleseconds, and estimate the car's state after 100 m
       double est_epsi = epsi - v * delta / Lf * latency;
   ```
 
-. Essentially, it assumes the car moves straight in the x direction durng the latency.
+. Essentially, it assumes the car moves straight in the x direction during the latency.
 
 
